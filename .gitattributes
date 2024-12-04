@@ -4,4 +4,3 @@
 *.txt linguist-language=dart
 *.swift linguist-language=dart
 *.kt linguist-language=dart
-*. linguist-language=dart
