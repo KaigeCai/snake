@@ -13,19 +13,17 @@ class SnakeGame extends StatefulWidget {
 
 class _SnakeGameState extends State<SnakeGame> {
   final int squaresPerRow = 20;
-
   final int squaresPerCol = 43;
-
   List<int> snake = [];
-
   var direction = 'down';
-
   var isPlaying = false;
-
   int food = 0;
 
   @override
   void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      showGameStartDialog(context);
+    });
     resetGame();
     super.initState();
   }
@@ -41,7 +39,6 @@ class _SnakeGameState extends State<SnakeGame> {
 
   void startGame() {
     isPlaying = true;
-
     Timer.periodic(const Duration(milliseconds: 200), (Timer timer) {
       setState(() {
         moveSnake();
@@ -110,16 +107,99 @@ class _SnakeGameState extends State<SnakeGame> {
     return false;
   }
 
+  void showGameStartDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // 点击对话框外部关闭
+      builder: (BuildContext context) {
+        return Dialog(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(32.0),
+            child: SizedBox(
+              height: 150.0,
+              child: Column(
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).pop();
+                            },
+                            child: Container(
+                              alignment: Alignment.center,
+                              color: Colors.white,
+                              child: const Text(
+                                '手动模式',
+                                style: TextStyle(
+                                  fontSize: 32.0,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Container(
+                          width: 1,
+                          height: double.infinity,
+                          color: Colors.black,
+                        ),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).pop();
+                            },
+                            child: Container(
+                              alignment: Alignment.center,
+                              color: Colors.white,
+                              child: const Text(
+                                'AI模式',
+                                style: TextStyle(
+                                  fontSize: 32.0,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void showGameOverDialog() {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text('游戏结束'),
-          content: Text('你的分数: ${snake.length}'),
+          content: Text(
+            '你的分数: ${snake.length}',
+            style: const TextStyle(fontSize: 24.0),
+          ),
           actions: <Widget>[
             TextButton(
-              child: const Text('关闭'),
+              child: const Text(
+                '排行榜',
+                style: TextStyle(fontSize: 24.0),
+              ),
+              onPressed: () {},
+            ),
+            const SizedBox(width: 100.0),
+            TextButton(
+              child: const Text(
+                '重新开始',
+                style: TextStyle(fontSize: 24.0),
+              ),
               onPressed: () {
                 Navigator.of(context).pop();
                 setState(() {
