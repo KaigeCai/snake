@@ -14,10 +14,12 @@ class SnakeGame extends StatefulWidget {
 class _SnakeGameState extends State<SnakeGame> {
   final int squaresPerRow = 20;
   final int squaresPerCol = 43;
+
   List<int> snake = [];
-  var direction = 'down';
+  var direction = 'down'; // 初始方向
   var isPlaying = false;
   int food = 0;
+  Timer? gameTimer;
 
   @override
   void initState() {
@@ -38,8 +40,12 @@ class _SnakeGameState extends State<SnakeGame> {
   }
 
   void startGame() {
-    isPlaying = true;
-    Timer.periodic(const Duration(milliseconds: 200), (Timer timer) {
+    setState(() {
+      isPlaying = true;
+    });
+
+    gameTimer =
+        Timer.periodic(const Duration(milliseconds: 200), (Timer timer) {
       setState(() {
         moveSnake();
         if (checkGameOver()) {
@@ -48,14 +54,54 @@ class _SnakeGameState extends State<SnakeGame> {
           showGameOverDialog();
         }
         if (snake.first == food) {
-          snake.add(food); // 蛇生长
+          snake.add(food); // 吃到食物，蛇增长
           generateNewFood();
         }
       });
     });
   }
 
+  String _getBestDirection() {
+    int head = snake.first;
+    int targetFood = food;
+
+    // 计算蛇头与食物的相对位置
+    int headRow = head ~/ squaresPerRow;
+    int headCol = head % squaresPerRow;
+    int foodRow = targetFood ~/ squaresPerRow;
+    int foodCol = targetFood % squaresPerRow;
+
+    // 判断食物的位置相对蛇头，选择最合适的移动方向
+    if (foodRow < headRow) {
+      return 'up'; // 食物在蛇头上方，移动方向为上
+    } else if (foodRow > headRow) {
+      return 'down'; // 食物在蛇头下方，移动方向为下
+    } else if (foodCol < headCol) {
+      return 'left'; // 食物在蛇头左侧，移动方向为左
+    } else {
+      return 'right'; // 食物在蛇头右侧，移动方向为右
+    }
+  }
+
   void moveSnake() {
+    // 使用AI控制蛇的方向
+    String aiDirection = _getBestDirection();
+
+    // 结合用户手动控制与AI控制
+    // 如果用户改变了方向，优先使用用户输入的方向
+    if (direction != aiDirection) {
+      // 保证蛇不会直接掉头
+      if (aiDirection == 'up' && direction != 'down') {
+        direction = 'up';
+      } else if (aiDirection == 'down' && direction != 'up') {
+        direction = 'down';
+      } else if (aiDirection == 'left' && direction != 'right') {
+        direction = 'left';
+      } else if (aiDirection == 'right' && direction != 'left') {
+        direction = 'right';
+      }
+    }
+
     switch (direction) {
       case 'down':
         if (snake.first >= squaresPerRow * (squaresPerCol - 1)) {
@@ -86,6 +132,7 @@ class _SnakeGameState extends State<SnakeGame> {
         }
         break;
     }
+
     if (snake.length > 1) {
       snake.removeLast(); // 防止蛇在开始时生长
     }
@@ -110,7 +157,7 @@ class _SnakeGameState extends State<SnakeGame> {
   void showGameStartDialog(BuildContext context) {
     showDialog(
       context: context,
-      barrierDismissible: false, // 点击对话框外部关闭
+      barrierDismissible: false,
       builder: (BuildContext context) {
         return Dialog(
           child: ClipRRect(
@@ -149,6 +196,7 @@ class _SnakeGameState extends State<SnakeGame> {
                           child: GestureDetector(
                             onTap: () {
                               Navigator.of(context).pop();
+                              startGame();
                             },
                             child: Container(
                               alignment: Alignment.center,
@@ -205,6 +253,7 @@ class _SnakeGameState extends State<SnakeGame> {
                 setState(() {
                   resetGame();
                 });
+                showGameStartDialog(context);
               },
             ),
           ],
@@ -221,20 +270,18 @@ class _SnakeGameState extends State<SnakeGame> {
         if (!isPlaying) startGame();
       },
       onVerticalDragUpdate: (DragUpdateDetails details) {
-        // 添加检查以启动游戏
         if (!isPlaying) startGame();
-        if (direction != 'up' && details.delta.dy > 0) {
+        if (details.primaryDelta! > 0 && direction != 'up') {
           direction = 'down';
-        } else if (direction != 'down' && details.delta.dy < 0) {
+        } else if (details.primaryDelta! < 0 && direction != 'down') {
           direction = 'up';
         }
       },
       onHorizontalDragUpdate: (DragUpdateDetails details) {
-        // 添加检查以启动游戏
         if (!isPlaying) startGame();
-        if (direction != 'left' && details.delta.dx > 0) {
+        if (details.primaryDelta! > 0 && direction != 'left') {
           direction = 'right';
-        } else if (direction != 'right' && details.delta.dx < 0) {
+        } else if (details.primaryDelta! < 0 && direction != 'right') {
           direction = 'left';
         }
       },
