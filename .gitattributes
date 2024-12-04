@@ -1,1 +1,7 @@
-file.extension linguist-language=Dart
+*.h linguist-language=dart
+*.cpp linguist-language=dart
+*.cmake linguist-language=dart
+*.txt linguist-language=dart
+*.swift linguist-language=dart
+*.kt linguist-language=dart
+*. linguist-language=dart
