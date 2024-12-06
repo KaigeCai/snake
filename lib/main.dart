@@ -49,6 +49,7 @@ class Button extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 20.0),
       child: ElevatedButton(
         onPressed: () {
+          HapticFeedback.mediumImpact(); // 震动反馈
           Navigator.of(context).pushNamed('/snake_pixel');
         },
         style: ElevatedButton.styleFrom(
