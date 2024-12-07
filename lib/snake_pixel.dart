@@ -45,60 +45,55 @@ class _SnakeGameState extends State<SnakeGame> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(32.0),
               child: SizedBox(
+                width: 120.0,
                 height: 150.0,
                 child: Stack(
                   children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.of(context).pop();
-                              },
-                              child: Container(
-                                alignment: Alignment.center,
-                                color: Colors.white,
-                                child: const Text(
-                                  '手动模式',
-                                  style: TextStyle(
-                                    fontSize: 32.0,
-                                    color: Colors.black,
-                                  ),
-                                ),
+                    Row(
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: Container(
+                            alignment: Alignment.centerLeft,
+                            child: const Text(
+                              '手动模式',
+                              style: TextStyle(
+                                fontSize: 38.0,
+                                color: Colors.black,
                               ),
                             ),
                           ),
-                          Container(
-                            width: 1,
-                            height: double.infinity,
-                            color: Colors.black,
-                          ),
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.of(context).pop();
-                                setState(() {
-                                  isManualMode = false;
-                                });
-                                startGame();
-                              },
-                              child: Container(
-                                alignment: Alignment.center,
-                                color: Colors.white,
-                                child: const Text(
-                                  'AI模式',
-                                  style: TextStyle(
-                                    fontSize: 32.0,
-                                    color: Colors.black,
-                                  ),
-                                ),
+                        ),
+                        Container(
+                          alignment: Alignment.center,
+                          width: 1,
+                          height: double.infinity,
+                          color: Colors.black,
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            setState(() {
+                              isManualMode = false;
+                            });
+                            startGame();
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(left: 12.0),
+                            child: const Text(
+                              'AI模式',
+                              style: TextStyle(
+                                fontSize: 38.0,
+                                color: Colors.black,
                               ),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
+                    // 设置按钮（右上角）
                     Align(
                       alignment: Alignment.topRight,
                       child: IconButton(
@@ -350,9 +345,9 @@ class _SnakeGameState extends State<SnakeGame> {
           direction = 'left';
         }
       },
-      child: Container(
-        color: backgroundColor,
-        child: GridView.builder(
+      child: Scaffold(
+        backgroundColor: backgroundColor,
+        body: GridView.builder(
           physics: const NeverScrollableScrollPhysics(),
           itemCount: squaresPerRow * squaresPerCol,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -361,29 +356,130 @@ class _SnakeGameState extends State<SnakeGame> {
           ),
           itemBuilder: (BuildContext context, int index) {
             if (snake.contains(index)) {
-              return Center(
-                child: Container(
+              if (index == snake.first) {
+                return SnakeHead(direction: direction);
+              } else {
+                return Padding(
                   padding: const EdgeInsets.all(1.0),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(5.0),
+                    borderRadius: BorderRadius.circular(4.0),
                     child: Container(color: Colors.green[500]),
                   ),
-                ),
-              );
+                );
+              }
             }
             if (index == food) {
-              return Center(
-                child: Container(
-                  padding: const EdgeInsets.all(1.0),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(5),
-                    child: Container(color: Colors.red),
-                  ),
+              return Padding(
+                padding: const EdgeInsets.all(1.0),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4.0),
+                  child: Container(color: Colors.red),
                 ),
               );
             }
-            return Container();
+            return const SizedBox.shrink();
           },
+        ),
+      ),
+    );
+  }
+}
+
+class SnakeHead extends StatelessWidget {
+  final String direction; // 方向参数，控制蛇头旋转
+
+  const SnakeHead({super.key, required this.direction});
+
+  @override
+  Widget build(BuildContext context) {
+    // 定义旋转角度
+    double rotationAngle;
+    switch (direction) {
+      case 'up':
+        rotationAngle = 0.0;
+        break;
+      case 'down':
+        rotationAngle = pi;
+        break;
+      case 'left':
+        rotationAngle = -pi / 2;
+        break;
+      case 'right':
+        rotationAngle = pi / 2;
+        break;
+      default:
+        rotationAngle = 0.0;
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(1.0),
+      child: Transform.rotate(
+        angle: rotationAngle,
+        child: Stack(
+          clipBehavior: Clip.none, // 允许舌头超出布局范围
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4.0),
+              child: Container(
+                color: Colors.green[500],
+                child: const Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    // 左眼
+                    Positioned(
+                      top: 0.2,
+                      left: 1.0,
+                      child: Text(
+                        '.',
+                        style: TextStyle(
+                          fontSize: 32.0,
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          height: 0.1,
+                          wordSpacing: 0.0,
+                        ),
+                      ),
+                    ),
+                    // 右眼
+                    Positioned(
+                      top: 0.2,
+                      right: 1.0,
+                      child: Text(
+                        '.',
+                        style: TextStyle(
+                          fontSize: 32.0,
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          height: 0.1,
+                          wordSpacing: 0.0,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // 舌头
+            const Positioned(
+              top: -12.0,
+              left: 0.2,
+              right: 0.2,
+              child: Text(
+                'Y',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.red,
+                  fontWeight: FontWeight.w300,
+                  height: 1.0,
+                ),
+                textAlign: TextAlign.center,
+                textHeightBehavior: TextHeightBehavior(
+                  applyHeightToFirstAscent: false,
+                  applyHeightToLastDescent: false,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
