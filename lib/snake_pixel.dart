@@ -206,6 +206,11 @@ class _SnakeGameState extends State<SnakeGame> {
       direction = _getBestDirection(); // 使用AI控制蛇的方向
     }
 
+    if (snake.length > 1) {
+      int secondLast = snake[snake.length - 2];
+      tailDir = _getTailDirection(secondLast); // 获取蛇尾方向
+    }
+
     switch (direction) {
       case 'up':
         if (snake.first < squaresPerRow) {
@@ -260,6 +265,34 @@ class _SnakeGameState extends State<SnakeGame> {
       }
     }
     return false;
+  }
+
+  String _getTailDirection(int secondLast) {
+    int last = snake.last;
+    int diff = last - secondLast;
+    String tailDirection = '';
+
+    if (diff == 1) {
+      tailDirection = 'right';
+    } else if (diff == -1) {
+      tailDirection = 'left';
+    } else if (diff == squaresPerRow) {
+      tailDirection = 'down';
+    } else if (diff == -squaresPerRow) {
+      tailDirection = 'up';
+    }
+
+    // 根据尾部方向进行旋转
+    if (tailDirection == 'up') {
+      return 'up'; // 旋转180度
+    } else if (tailDirection == 'down') {
+      return 'down'; // 不旋转
+    } else if (tailDirection == 'left') {
+      return 'right'; // 向右旋转90度
+    } else if (tailDirection == 'right') {
+      return 'left'; // 向左旋转90度
+    }
+    return ''; // 默认返回值
   }
 
   void showGameOverDialog() {
@@ -361,7 +394,7 @@ class _SnakeGameState extends State<SnakeGame> {
               if (index == snake.first) {
                 return SnakeHead(direction: direction); // 蛇头
               } else if (index == snake.last) {
-                return SnakeTail(tailDir: direction); // 蛇尾
+                return SnakeTail(tailDir: tailDir); // 蛇尾
               } else {
                 return const SnakeBody(); // 蛇身
               }
@@ -516,10 +549,10 @@ class SnakeTail extends StatelessWidget {
         rotationAngle = pi;
         break;
       case 'left':
-        rotationAngle = -pi / 2;
+        rotationAngle = pi / 2;
         break;
       case 'right':
-        rotationAngle = pi / 2;
+        rotationAngle = -pi / 2;
         break;
       default:
         rotationAngle = 0.0;
