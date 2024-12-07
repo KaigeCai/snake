@@ -178,7 +178,8 @@ class _SnakeGameState extends State<SnakeGame> {
       });
     });
   }
-
+  
+  // AI控制蛇运动方向
   String _getBestDirection() {
     int head = snake.first;
     int targetFood = food;
@@ -189,16 +190,55 @@ class _SnakeGameState extends State<SnakeGame> {
     int foodRow = targetFood ~/ squaresPerRow;
     int foodCol = targetFood % squaresPerRow;
 
-    // 判断食物的位置相对蛇头，选择最合适的移动方向
-    if (foodRow < headRow) {
-      return 'up'; // 食物在蛇头上方，移动方向为上
-    } else if (foodRow > headRow) {
-      return 'down'; // 食物在蛇头下方，移动方向为下
-    } else if (foodCol < headCol) {
-      return 'left'; // 食物在蛇头左侧，移动方向为左
-    } else {
-      return 'right'; // 食物在蛇头右侧，移动方向为右
+    // 先计算蛇头的四个可能的移动方向
+    List<String> directions = ['up', 'down', 'left', 'right'];
+
+    // 排除与蛇身发生碰撞的方向
+    directions = directions.where((direction) {
+      int newHead;
+      switch (direction) {
+        case 'up':
+          newHead = head - squaresPerRow;
+          break;
+        case 'down':
+          newHead = head + squaresPerRow;
+          break;
+        case 'left':
+          newHead = head - 1;
+          break;
+        case 'right':
+          newHead = head + 1;
+          break;
+        default:
+          newHead = head;
+          break;
+      }
+
+      // 判断新头部是否会与蛇身发生碰撞
+      if (newHead >= 0 && newHead < squaresPerRow * squaresPerCol && !snake.contains(newHead)) {
+        return true; // 如果不会碰撞，保留该方向
+      }
+      return false; // 会碰撞则排除该方向
+    }).toList();
+
+    // 如果有多个安全的方向，选择离食物最近的方向
+    if (directions.isEmpty) {
+      return ''; // 没有安全的方向，表示游戏结束或无法继续
     }
+
+    // 判断食物的位置相对蛇头，选择最合适的移动方向
+    if (foodRow < headRow && directions.contains('up')) {
+      return 'up'; // 食物在蛇头上方且该方向不碰撞，移动方向为上
+    } else if (foodRow > headRow && directions.contains('down')) {
+      return 'down'; // 食物在蛇头下方且该方向不碰撞，移动方向为下
+    } else if (foodCol < headCol && directions.contains('left')) {
+      return 'left'; // 食物在蛇头左侧且该方向不碰撞，移动方向为左
+    } else if (directions.contains('right')) {
+      return 'right'; // 食物在蛇头右侧且该方向不碰撞，移动方向为右
+    }
+
+    // 如果无法选择食物方向，选择第一个安全方向
+    return directions.first;
   }
 
   void moveSnake() {
@@ -211,6 +251,7 @@ class _SnakeGameState extends State<SnakeGame> {
       tailDir = _getTailDirection(secondLast); // 获取蛇尾方向
     }
 
+    // 先旋转蛇头，再根据新的方向移动蛇
     switch (direction) {
       case 'up':
         if (snake.first < squaresPerRow) {
