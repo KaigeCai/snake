@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:snake/rounded_triangle.dart';
 
 class SnakeGame extends StatefulWidget {
   const SnakeGame({super.key});
@@ -17,6 +18,7 @@ class _SnakeGameState extends State<SnakeGame> {
 
   List<int> snake = [];
   String direction = ''; // 初始方向
+  String tailDir = ''; // 蛇尾方向
   bool isPlaying = false;
   int food = 0;
   Timer? gameTimer;
@@ -357,20 +359,16 @@ class _SnakeGameState extends State<SnakeGame> {
           itemBuilder: (BuildContext context, int index) {
             if (snake.contains(index)) {
               if (index == snake.first) {
-                return SnakeHead(direction: direction);
+                return SnakeHead(direction: direction); // 蛇头
+              } else if (index == snake.last) {
+                return SnakeTail(tailDir: direction); // 蛇尾
               } else {
-                return Padding(
-                  padding: const EdgeInsets.all(1.0),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4.0),
-                    child: Container(color: Colors.green[500]),
-                  ),
-                );
+                return const SnakeBody(); // 蛇身
               }
             }
             if (index == food) {
               return Padding(
-                padding: const EdgeInsets.all(1.0),
+                padding: const EdgeInsets.all(0.8),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(4.0),
                   child: Container(color: Colors.red),
@@ -385,10 +383,25 @@ class _SnakeGameState extends State<SnakeGame> {
   }
 }
 
-class SnakeHead extends StatelessWidget {
-  final String direction; // 方向参数，控制蛇头旋转
+class SnakeBody extends StatelessWidget {
+  const SnakeBody({super.key});
 
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(0.8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4.0),
+        child: Container(color: Colors.green[500]),
+      ),
+    );
+  }
+}
+
+class SnakeHead extends StatelessWidget {
   const SnakeHead({super.key, required this.direction});
+
+  final String direction; // 方向参数，控制蛇头旋转
 
   @override
   Widget build(BuildContext context) {
@@ -412,7 +425,7 @@ class SnakeHead extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(1.0),
+      padding: const EdgeInsets.all(0.8),
       child: Transform.rotate(
         angle: rotationAngle,
         child: Stack(
@@ -481,6 +494,41 @@ class SnakeHead extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class SnakeTail extends StatelessWidget {
+  const SnakeTail({super.key, required this.tailDir});
+
+  final String tailDir;
+
+  @override
+  Widget build(BuildContext context) {
+    // 定义旋转角度
+    double rotationAngle;
+    switch (tailDir) {
+      case 'up':
+        rotationAngle = 0.0;
+        break;
+      case 'down':
+        rotationAngle = pi;
+        break;
+      case 'left':
+        rotationAngle = -pi / 2;
+        break;
+      case 'right':
+        rotationAngle = pi / 2;
+        break;
+      default:
+        rotationAngle = 0.0;
+    }
+
+    return Transform.rotate(
+      angle: rotationAngle,
+      child: CustomPaint(
+        painter: RoundedTrianglePainter(),
       ),
     );
   }
