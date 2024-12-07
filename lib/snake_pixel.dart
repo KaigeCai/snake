@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'dart:io';
 import 'dart:math';
 
@@ -215,6 +216,7 @@ class _SnakeGameState extends State<SnakeGame> {
   }
 
   // AI控制蛇运动方向
+
   String _getBestDirection() {
     int head = snake.first;
     int targetFood = food;
@@ -227,9 +229,10 @@ class _SnakeGameState extends State<SnakeGame> {
 
     // 先计算蛇头的四个可能的移动方向
     List<String> directions = ['up', 'down', 'left', 'right'];
+    List<String> safeDirections = []; // 用来存放安全的移动方向
 
-    // 排除与蛇身发生碰撞的方向
-    directions = directions.where((direction) {
+    // 判断每个方向是否安全
+    for (String direction in directions) {
       int newHead;
       switch (direction) {
         case 'up':
@@ -249,31 +252,147 @@ class _SnakeGameState extends State<SnakeGame> {
           break;
       }
 
+      // 如果蛇撞墙，处理穿墙逻辑
+      newHead = _handleWallCollision(newHead, direction);
+
       // 判断新头部是否会与蛇身发生碰撞
       if (newHead >= 0 && newHead < squaresPerRow * squaresPerCol && !snake.contains(newHead)) {
-        return true; // 如果不会碰撞，保留该方向
+        safeDirections.add(direction); // 如果方向安全，则加入到安全方向列表
       }
-      return false; // 会碰撞则排除该方向
-    }).toList();
-
-    // 如果有多个安全的方向，选择离食物最近的方向
-    if (directions.isEmpty) {
-      return ''; // 没有安全的方向，表示游戏结束或无法继续
     }
 
-    // 判断食物的位置相对蛇头，选择最合适的移动方向
-    if (foodRow < headRow && directions.contains('up')) {
-      return 'up'; // 食物在蛇头上方且该方向不碰撞，移动方向为上
-    } else if (foodRow > headRow && directions.contains('down')) {
-      return 'down'; // 食物在蛇头下方且该方向不碰撞，移动方向为下
-    } else if (foodCol < headCol && directions.contains('left')) {
-      return 'left'; // 食物在蛇头左侧且该方向不碰撞，移动方向为左
-    } else if (directions.contains('right')) {
-      return 'right'; // 食物在蛇头右侧且该方向不碰撞，移动方向为右
+    // 如果没有安全的方向，表示游戏结束或无法继续
+    if (safeDirections.isEmpty) {
+      return '';
+    }
+
+    // 计算包围圈，判断是否有被困的风险
+    if (_isSnakeTrapped(head)) {
+      return _findEscapePath(head); // 如果蛇被困，寻找逃生路径
+    }
+
+    // 如果蛇头与食物相对位置存在差距，优先选择靠近食物的方向
+    if (safeDirections.contains('up') && foodRow < headRow) {
+      return 'up'; // 食物在蛇头上方，优先选择上
+    } else if (safeDirections.contains('down') && foodRow > headRow) {
+      return 'down'; // 食物在蛇头下方，优先选择下
+    } else if (safeDirections.contains('left') && foodCol < headCol) {
+      return 'left'; // 食物在蛇头左侧，优先选择左
+    } else if (safeDirections.contains('right') && foodCol > headCol) {
+      return 'right'; // 食物在蛇头右侧，优先选择右
     }
 
     // 如果无法选择食物方向，选择第一个安全方向
-    return directions.first;
+    return safeDirections.first; // 选择第一个安全方向
+  }
+
+// 处理蛇的穿墙逻辑
+  int _handleWallCollision(int newHead, String direction) {
+    // 如果蛇头出界，进行穿墙处理
+    if (direction == 'up' && newHead < 0) {
+      // 如果向上走并且出界，将蛇从下边界穿过
+      newHead = (squaresPerRow * squaresPerCol) - squaresPerRow + (newHead % squaresPerRow);
+    } else if (direction == 'down' && newHead >= squaresPerRow * squaresPerCol) {
+      // 如果向下走并且出界，将蛇从上边界穿过
+      newHead = newHead % squaresPerRow;
+    } else if (direction == 'left' && newHead % squaresPerRow < 0) {
+      // 如果向左走并且出界，将蛇从右边界穿过
+      newHead = (squaresPerRow * squaresPerCol) - 1 - (newHead % squaresPerRow);
+    } else if (direction == 'right' && newHead % squaresPerRow >= squaresPerRow) {
+      // 如果向右走并且出界，将蛇从左边界穿过
+      newHead = newHead % squaresPerRow;
+    }
+
+    return newHead;
+  }
+
+// 判断蛇是否被困住
+  bool _isSnakeTrapped(int head) {
+    // 判断蛇是否被困的条件可以是：没有任何安全的方向可以移动
+    List<String> directions = ['up', 'down', 'left', 'right'];
+    for (String direction in directions) {
+      int newHead;
+      switch (direction) {
+        case 'up':
+          newHead = head - squaresPerRow;
+          break;
+        case 'down':
+          newHead = head + squaresPerRow;
+          break;
+        case 'left':
+          newHead = head - 1;
+          break;
+        case 'right':
+          newHead = head + 1;
+          break;
+        default:
+          newHead = head;
+          break;
+      }
+
+      // 如果有一个安全的方向可走，返回false，说明蛇没被困住
+      if (newHead >= 0 && newHead < squaresPerRow * squaresPerCol && !snake.contains(newHead)) {
+        return false;
+      }
+    }
+    // 如果四个方向都被封锁，说明蛇被困住了
+    return true;
+  }
+
+// 寻找逃生路径（突破口）
+  String _findEscapePath(int head) {
+    // 使用广度优先搜索（BFS）来寻找逃生路径，确保找到最短的路径
+    List<String> directions = ['up', 'down', 'left', 'right'];
+    Set<int> visited = {}; // 记录已经访问过的方格
+    Queue<int> queue = Queue<int>(); // BFS队列
+    Map<int, String> previousMove = {}; // 记录每个位置的前一个移动方向
+
+    // 起点为蛇头位置，开始BFS搜索
+    queue.add(head);
+    visited.add(head);
+
+    while (queue.isNotEmpty) {
+      int current = queue.removeFirst();
+
+      // 判断当前方格是否安全且未被蛇身占据
+      for (String direction in directions) {
+        int nextHead;
+        switch (direction) {
+          case 'up':
+            nextHead = current - squaresPerRow;
+            break;
+          case 'down':
+            nextHead = current + squaresPerRow;
+            break;
+          case 'left':
+            nextHead = current - 1;
+            break;
+          case 'right':
+            nextHead = current + 1;
+            break;
+          default:
+            nextHead = current;
+            break;
+        }
+
+        if (nextHead >= 0 &&
+            nextHead < squaresPerRow * squaresPerCol &&
+            !snake.contains(nextHead) &&
+            !visited.contains(nextHead)) {
+          visited.add(nextHead);
+          queue.add(nextHead);
+          previousMove[nextHead] = direction;
+
+          // 如果找到一个安全出口，就返回这个方向
+          if (!_isSnakeTrapped(nextHead)) {
+            return direction;
+          }
+        }
+      }
+    }
+
+    // 如果没有找到逃生路径，就返回空，表示无法逃脱
+    return '';
   }
 
   void moveSnake() {
