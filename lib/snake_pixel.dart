@@ -1,9 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:snake/rounded_triangle.dart';
 
 class SnakeGame extends StatefulWidget {
   const SnakeGame({super.key});
@@ -13,8 +13,8 @@ class SnakeGame extends StatefulWidget {
 }
 
 class _SnakeGameState extends State<SnakeGame> {
-  late int squaresPerRow = 20; // 每行方格的数量(列数)
-  late int squaresPerCol = 43; // 每列方格的数量(行数)
+  late int squaresPerRow = 10; // 每行方格的数量(列数)
+  late int squaresPerCol = 10; // 每列方格的数量(行数)
 
   List<int> snake = [];
   String direction = ''; // 初始方向
@@ -33,7 +33,42 @@ class _SnakeGameState extends State<SnakeGame> {
     });
     resetGame();
     backgroundColor = Colors.black; // 默认背景色为黑色
+
+    // 在 Windows 系统上监听键盘事件
+    if (Platform.isWindows || Platform.isMacOS) {
+      HardwareKeyboard.instance.addHandler((KeyEvent event) {
+        final key = event.logicalKey;
+
+        if (!isPlaying) startGame();
+
+        // 使用上下左右键控制方向
+        if (key == LogicalKeyboardKey.arrowUp && direction != 'down') {
+          direction = 'up';
+        } else if (key == LogicalKeyboardKey.arrowDown && direction != 'up') {
+          direction = 'down';
+        } else if (key == LogicalKeyboardKey.arrowLeft && direction != 'right') {
+          direction = 'left';
+        } else if (key == LogicalKeyboardKey.arrowRight && direction != 'left') {
+          direction = 'right';
+        }
+
+        if (key == LogicalKeyboardKey.escape) {
+          Navigator.of(context).pop();
+        }
+        return true;
+      });
+    }
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    if (Platform.isWindows || Platform.isMacOS) {
+      HardwareKeyboard.instance.removeHandler((_) {
+        return false;
+      });
+    }
+    super.dispose();
   }
 
   void showGameStartDialog(BuildContext context) {
@@ -178,7 +213,7 @@ class _SnakeGameState extends State<SnakeGame> {
       });
     });
   }
-  
+
   // AI控制蛇运动方向
   String _getBestDirection() {
     int head = snake.first;
@@ -378,20 +413,27 @@ class _SnakeGameState extends State<SnakeGame> {
     );
   }
 
-  // 根据屏幕方向调整网格的维度
+  // 根据屏幕尺寸动态设置网格的维度，保证充满整个屏幕
   void _updateGridDimensions() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final double screenHeight = MediaQuery.of(context).size.height;
 
-    // 判断屏幕方向，竖屏时设置为 20 x 43，横屏时设置为 43 x 20
+    // 设定每个方格的最小宽高
+    const double gridSize = 24.0; // 每个方格的大小
+
+    // 计算每行和每列能容纳的方格数
+    squaresPerRow = (screenWidth / gridSize).floor();
+    squaresPerCol = (screenHeight / gridSize).floor();
+
+    // 如果屏幕方向是横屏，调整网格方向
     if (screenWidth > screenHeight) {
-      // 横屏
-      squaresPerRow = 43;
-      squaresPerCol = 20;
+      // 横屏：确保每行的方格数量多，列数少
+      squaresPerRow = (screenWidth / gridSize).floor();
+      squaresPerCol = (screenHeight / gridSize).floor();
     } else {
-      // 竖屏
-      squaresPerRow = 20;
-      squaresPerCol = 43;
+      // 竖屏：确保每列的方格数量多，行数少
+      squaresPerRow = (screenWidth / gridSize).floor();
+      squaresPerCol = (screenHeight / gridSize).floor();
     }
   }
 
@@ -440,6 +482,7 @@ class _SnakeGameState extends State<SnakeGame> {
                 return const SnakeBody(); // 蛇身
               }
             }
+            // 食物
             if (index == food) {
               return Padding(
                 padding: const EdgeInsets.all(0.8),
@@ -514,7 +557,7 @@ class SnakeHead extends StatelessWidget {
                   children: [
                     // 左眼
                     Positioned(
-                      top: 0.2,
+                      top: -2.0,
                       left: 1.0,
                       child: Text(
                         '.',
@@ -529,7 +572,7 @@ class SnakeHead extends StatelessWidget {
                     ),
                     // 右眼
                     Positioned(
-                      top: 0.2,
+                      top: -2.0,
                       right: 1.0,
                       child: Text(
                         '.',
@@ -548,7 +591,7 @@ class SnakeHead extends StatelessWidget {
             ),
             // 舌头
             const Positioned(
-              top: -12.0,
+              top: -12.5,
               left: 0.2,
               right: 0.2,
               child: Text(
@@ -606,4 +649,77 @@ class SnakeTail extends StatelessWidget {
       ),
     );
   }
+}
+
+class RoundedTrianglePainter extends CustomPainter {
+  double distanceFactor = 0.2;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    Paint paint = Paint()
+      ..color = Colors.green[500]!
+      ..style = PaintingStyle.fill;
+
+    Point p1 = Point(size.width / 2, 0);
+    Point p2 = Point(0, size.width);
+    Point p3 = Point(size.width, size.width);
+
+    Point p1p2Start = getLinePoint(p1, p2, closeToStart: true);
+    Point p1p2End = getLinePoint(p1, p2, closeToStart: false);
+
+    Point p2p3Start = getLinePoint(p2, p3, closeToStart: true);
+    Point p2p3End = getLinePoint(p2, p3, closeToStart: false);
+
+    Point p3p1Start = getLinePoint(p3, p1, closeToStart: true);
+    Point p3p1End = getLinePoint(p3, p1, closeToStart: false);
+
+    canvas.drawPath(
+      Path()
+        ..moveTo(
+          p1p2Start.x.toDouble(),
+          p1p2Start.y.toDouble(),
+        )
+        ..lineTo(
+          p1p2End.x.toDouble(),
+          p1p2End.y.toDouble(),
+        )
+        ..quadraticBezierTo(
+          p2.x.toDouble(),
+          p2.y.toDouble(),
+          p2p3Start.x.toDouble(),
+          p2p3Start.y.toDouble(),
+        )
+        ..lineTo(
+          p2p3End.x.toDouble(),
+          p2p3End.y.toDouble(),
+        )
+        ..quadraticBezierTo(
+          p3.x.toDouble(),
+          p3.y.toDouble(),
+          p3p1Start.x.toDouble(),
+          p3p1Start.y.toDouble(),
+        )
+        ..lineTo(
+          p3p1End.x.toDouble(),
+          p3p1End.y.toDouble(),
+        )
+        ..quadraticBezierTo(
+          p1.x.toDouble(),
+          p1.y.toDouble(),
+          p1p2Start.x.toDouble(),
+          p1p2Start.y.toDouble(),
+        ),
+      paint,
+    );
+  }
+
+  Point getLinePoint(Point start, Point end, {required bool closeToStart}) {
+    final double correctedDistanceFactor = closeToStart ? distanceFactor : (1 - distanceFactor);
+    int x = (start.x * (1 - correctedDistanceFactor) + end.x * correctedDistanceFactor).round();
+    int y = (start.y * (1 - correctedDistanceFactor) + end.y * correctedDistanceFactor).round();
+    return Point(x, y);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
