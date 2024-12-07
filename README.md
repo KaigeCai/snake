@@ -3,4 +3,6 @@
 
 微信支付宝转账至：[18852284878]()
 
-![贪吃蛇A](./picture/snake-a.webp)
+![]()
+<img src="./picture/snake-a.webp" alt="贪吃蛇A" width="225" height="400">
+<img src="./picture/snake-a.webp" alt="贪吃蛇A" width="225" height="400">
