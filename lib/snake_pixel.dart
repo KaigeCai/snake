@@ -14,8 +14,8 @@ class SnakeGame extends StatefulWidget {
 }
 
 class _SnakeGameState extends State<SnakeGame> {
-  late int squaresPerRow = 10; // 每行方格的数量(列数)
-  late int squaresPerCol = 10; // 每列方格的数量(行数)
+  late int squaresPerRow = 30; // 每行方格的数量(列数)
+  late int squaresPerCol = 30; // 每列方格的数量(行数)
 
   List<int> snake = [];
   String direction = ''; // 初始方向
@@ -199,7 +199,7 @@ class _SnakeGameState extends State<SnakeGame> {
       isPlaying = true;
     });
 
-    gameTimer = Timer.periodic(const Duration(milliseconds: 200), (Timer timer) {
+    gameTimer = Timer.periodic(const Duration(milliseconds: 100), (Timer timer) {
       setState(() {
         moveSnake();
         if (checkGameOver()) {
@@ -216,7 +216,6 @@ class _SnakeGameState extends State<SnakeGame> {
   }
 
   // AI控制蛇运动方向
-
   String _getBestDirection() {
     int head = snake.first;
     int targetFood = food;
@@ -282,8 +281,47 @@ class _SnakeGameState extends State<SnakeGame> {
       return 'right'; // 食物在蛇头右侧，优先选择右
     }
 
+    // 如果蛇头被四面包围，优先选择通往空白区域的方向
+    if (isSurrounded(head)) {
+      for (String direction in safeDirections) {
+        int newHead;
+        switch (direction) {
+          case 'up':
+            newHead = head - squaresPerRow;
+            break;
+          case 'down':
+            newHead = head + squaresPerRow;
+            break;
+          case 'left':
+            newHead = head - 1;
+            break;
+          case 'right':
+            newHead = head + 1;
+            break;
+          default:
+            newHead = head;
+        }
+
+        // 检查新头部是否通向空白区域
+        if (!snake.contains(newHead)) {
+          return direction;
+        }
+      }
+    }
+
     // 如果无法选择食物方向，选择第一个安全方向
     return safeDirections.first; // 选择第一个安全方向
+  }
+
+  // 判断蛇头是否被身体包围形成墙
+  bool isSurrounded(int head) {
+    int up = head - squaresPerRow;
+    int down = head + squaresPerRow;
+    int left = head - 1;
+    int right = head + 1;
+
+    // 检查是否四面都被占据
+    return snake.contains(up) && snake.contains(down) && snake.contains(left) && snake.contains(right);
   }
 
 // 处理蛇的穿墙逻辑
@@ -538,7 +576,7 @@ class _SnakeGameState extends State<SnakeGame> {
     final double screenHeight = MediaQuery.of(context).size.height;
 
     // 设定每个方格的最小宽高
-    const double gridSize = 24.0; // 每个方格的大小
+    const double gridSize = 22.0; // 每个方格的大小
 
     // 计算每行和每列能容纳的方格数
     squaresPerRow = (screenWidth / gridSize).floor();
