@@ -30,6 +30,7 @@ class _SnakeGameState extends State<SnakeGame> {
   @override
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _updateGridDimensions();
       showGameStartDialog(context);
     });
     resetGame();
@@ -413,10 +414,7 @@ class _SnakeGameState extends State<SnakeGame> {
             break;
         }
 
-        if (nextHead >= 0 &&
-            nextHead < squaresPerRow * squaresPerCol &&
-            !snake.contains(nextHead) &&
-            !visited.contains(nextHead)) {
+        if (nextHead >= 0 && nextHead < squaresPerRow * squaresPerCol && !snake.contains(nextHead) && !visited.contains(nextHead)) {
           visited.add(nextHead);
           queue.add(nextHead);
           previousMove[nextHead] = direction;
@@ -572,34 +570,33 @@ class _SnakeGameState extends State<SnakeGame> {
 
   // 根据屏幕尺寸动态设置网格的维度，保证充满整个屏幕
   void _updateGridDimensions() {
-    final double screenWidth = MediaQuery.of(context).size.width;
-    final double screenHeight = MediaQuery.of(context).size.height;
+    setState(() {
+      final double screenWidth = MediaQuery.of(context).size.width;
+      final double screenHeight = MediaQuery.of(context).size.height;
 
-    // 设定每个方格的最小宽高
-    const double gridSize = 22.0; // 每个方格的大小
+      // 设定每个方格的最小宽高
+      const double gridSize = 22.0; // 每个方格的大小
 
-    // 计算每行和每列能容纳的方格数
-    squaresPerRow = (screenWidth / gridSize).floor();
-    squaresPerCol = (screenHeight / gridSize).floor();
-
-    // 如果屏幕方向是横屏，调整网格方向
-    if (screenWidth > screenHeight) {
-      // 横屏：确保每行的方格数量多，列数少
+      // 计算每行和每列能容纳的方格数
       squaresPerRow = (screenWidth / gridSize).floor();
       squaresPerCol = (screenHeight / gridSize).floor();
-    } else {
-      // 竖屏：确保每列的方格数量多，行数少
-      squaresPerRow = (screenWidth / gridSize).floor();
-      squaresPerCol = (screenHeight / gridSize).floor();
-    }
+
+      // 如果屏幕方向是横屏，调整网格方向
+      if (screenWidth > screenHeight) {
+        // 横屏：确保每行的方格数量多，列数少
+        squaresPerRow = (screenWidth / gridSize).floor();
+        squaresPerCol = (screenHeight / gridSize).floor();
+      } else {
+        // 竖屏：确保每列的方格数量多，行数少
+        squaresPerRow = (screenWidth / gridSize).floor();
+        squaresPerCol = (screenHeight / gridSize).floor();
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
-
-    _updateGridDimensions();
-
     return GestureDetector(
       onTap: () {
         if (!isPlaying) startGame();
